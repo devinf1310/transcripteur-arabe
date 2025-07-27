@@ -313,11 +313,11 @@
         <h1>🎤 مُحَوِّل الصوت إلى نص</h1>
         
         <div class="info-banner">
-            <h3>📱 مشكلة الملفات المحلية على الجوال</h3>
-            <p><strong>المشكلة:</strong> المتصفحات المحمولة تمنع الميكروفون من الملفات المحلية (file://)</p>
-            <p><strong>الحل السريع:</strong> ارفع الملف على GitHub Pages أو Netlify (مجاناً)</p>
-            <p><strong>أو استخدم خادم محلي:</strong> python -m http.server 8000</p>
-            <p><strong>أو جرب:</strong> تطبيق HTTP Server على Android</p>
+            <h3>🔧 Diagnostic - Micro fonctionne mais pas de texte</h3>
+            <p><strong>✅ Microphone OK:</strong> La barre de volume bouge</p>
+            <p><strong>❓ Problème:</strong> API Speech Recognition ne répond pas</p>
+            <p><strong>🔍 Vérification:</strong> Ouvrez la console (F12) pour voir les logs</p>
+            <p><strong>💡 Solutions:</strong> Le système va essayer plusieurs langues et modes</p>
         </div>
 
         <div class="punctuation-controls">
@@ -379,14 +379,14 @@
         </div>
 
         <div class="tips">
-            <h4>🔧 حلول للملفات المحلية على الجوال</h4>
+            <h4>🔍 Étapes de diagnostic</h4>
             <ul>
-                <li>• <strong>الحل الأسرع:</strong> ارفع الملف على GitHub Pages (مجاناً وآمن)</li>
-                <li>• <strong>Netlify Drop:</strong> اسحب الملف إلى netlify.com وستحصل على رابط فوري</li>
-                <li>• <strong>CodePen:</strong> انسخ الكود إلى codepen.io واحفظه</li>
-                <li>• <strong>Android:</strong> حمل تطبيق "HTTP Server" وشغل خادم محلي</li>
-                <li>• <strong>على الكمبيوتر:</strong> python -m http.server 8000 ثم افتح localhost:8000</li>
-                <li>• <strong>البديل:</strong> استخدم متصفح Desktop على الجوال (إذا متوفر)</li>
+                <li>• <strong>📱 Ouvrez la console:</strong> Sur mobile, allez dans Paramètres Chrome → Plus d'outils → Console développeur</li>
+                <li>• <strong>🎤 Testez d'abord en anglais:</strong> Dites "Hello world" pour voir si ça fonctionne</li>
+                <li>• <strong>🔄 Si échec en arabe:</strong> Le système basculera automatiquement en anglais</li>
+                <li>• <strong>🌍 Problème fréquent:</strong> L'arabe n'est pas disponible sur tous les appareils</li>
+                <li>• <strong>📞 Test rapide:</strong> Dites quelque chose et regardez les logs dans la console</li>
+                <li>• <strong>🔧 Solutions:</strong> Chrome mobile → Menu → Plus d'outils → Console développeur</li>
             </ul>
         </div>
     </div>
@@ -427,23 +427,34 @@
 
         function startSpeechRecognition() {
             try {
+                console.log('🎤 Démarrage de la reconnaissance vocale...');
+                
                 recognition = new SpeechRecognition();
-                recognition.lang = 'ar-SA';
+                
+                // Configuration pour l'arabe
+                recognition.lang = 'ar-SA'; // العربية السعودية
                 recognition.continuous = true;
                 recognition.interimResults = true;
-
+                recognition.maxAlternatives = 1;
+                
+                // Gestion du démarrage
                 recognition.onstart = function() {
+                    console.log('✅ Reconnaissance vocale démarrée');
                     isListening = true;
                     updateUI();
-                    updateStatus('🎤 جاري الاستماع... تحدث بشكل طبيعي!', 'listening');
+                    updateStatus('🎤 جاري الاستماع... تحدث الآن!', 'listening');
                 };
 
+                // Gestion des résultats
                 recognition.onresult = function(event) {
+                    console.log('📝 Résultat reçu:', event);
+                    
                     let interimTranscript = '';
                     let finalTranscript = '';
                     
                     for (let i = event.resultIndex; i < event.results.length; i++) {
                         const transcript = event.results[i][0].transcript;
+                        console.log(`Segment ${i}:`, transcript, 'Final:', event.results[i].isFinal);
                         
                         if (event.results[i].isFinal) {
                             finalTranscript += transcript;
@@ -453,6 +464,7 @@
                     }
                     
                     if (finalTranscript) {
+                        console.log('✅ Texte final reçu:', finalTranscript);
                         processAndAddText(finalTranscript);
                     }
                     
@@ -460,26 +472,105 @@
                     displayTranscript();
                 };
 
+                // Gestion des erreurs
                 recognition.onerror = function(event) {
-                    console.error('خطأ في التعرف على الصوت:', event.error);
-                    handleRecognitionError(event.error);
+                    console.error('❌ Erreur reconnaissance vocale:', event.error);
+                    
+                    let errorMessage = '';
+                    switch(event.error) {
+                        case 'no-speech':
+                            errorMessage = '🔇 لم يتم سماع أي كلام - جرب التحدث بصوت أعلى';
+                            break;
+                        case 'audio-capture':
+                            errorMessage = '🎤 مشكلة في التقاط الصوت';
+                            break;
+                        case 'not-allowed':
+                            errorMessage = '🚫 لم يتم السماح بالوصول للميكروفون';
+                            break;
+                        case 'network':
+                            errorMessage = '🌐 مشكلة في الاتصال بالإنترنت';
+                            break;
+                        case 'language-not-supported':
+                            errorMessage = '🌍 اللغة العربية غير مدعومة - جرب en-US';
+                            // Essayer l'anglais comme fallback
+                            recognition.lang = 'en-US';
+                            break;
+                        case 'service-not-allowed':
+                            errorMessage = '⛔ خدمة التعرف على الصوت غير متاحة';
+                            break;
+                        default:
+                            errorMessage = '❌ خطأ غير محدد: ' + event.error;
+                    }
+                    
+                    updateStatus(errorMessage, 'error');
                 };
 
+                // Gestion de l'arrêt
                 recognition.onend = function() {
+                    console.log('🔄 Reconnaissance vocale arrêtée, redémarrage...');
+                    
                     if (isListening) {
+                        // Redémarrage automatique après une courte pause
                         setTimeout(() => {
                             if (isListening) {
-                                recognition.start();
+                                console.log('🔄 Redémarrage automatique...');
+                                try {
+                                    recognition.start();
+                                } catch (error) {
+                                    console.error('Erreur redémarrage:', error);
+                                    updateStatus('❌ خطأ في إعادة التشغيل', 'error');
+                                }
                             }
                         }, 100);
                     }
                 };
 
+                // Démarrage
+                console.log('🚀 Tentative de démarrage...');
                 recognition.start();
                 
             } catch (error) {
-                console.error('خطأ عند بدء التشغيل:', error);
-                updateStatus('❌ خطأ في بدء التعرف على الصوت', 'error');
+                console.error('❌ Erreur lors de l\'initialisation:', error);
+                updateStatus('❌ خطأ في تهيئة التعرف على الصوت', 'error');
+                
+                // Essayer avec des paramètres différents
+                tryAlternativeRecognition();
+            }
+        }
+
+        // Fonction de fallback avec paramètres différents
+        function tryAlternativeRecognition() {
+            console.log('🔄 Essai avec paramètres alternatifs...');
+            
+            try {
+                recognition = new SpeechRecognition();
+                recognition.lang = 'en-US'; // Anglais comme fallback
+                recognition.continuous = false; // Mode non-continu
+                recognition.interimResults = false; // Pas de résultats intermédiaires
+                
+                recognition.onresult = function(event) {
+                    const transcript = event.results[0][0].transcript;
+                    console.log('📝 Résultat (EN):', transcript);
+                    processAndAddText(transcript);
+                    displayTranscript();
+                    
+                    // Redémarrer pour le prochain segment
+                    if (isListening) {
+                        setTimeout(() => recognition.start(), 500);
+                    }
+                };
+                
+                recognition.onerror = function(event) {
+                    console.error('❌ Erreur mode alternatif:', event.error);
+                    updateStatus('❌ لا يمكن تشغيل التعرف على الصوت', 'error');
+                };
+                
+                recognition.start();
+                updateStatus('🎤 وضع بديل - تحدث بالإنجليزية', 'listening');
+                
+            } catch (error) {
+                console.error('❌ Échec complet:', error);
+                updateStatus('❌ التعرف على الصوت لا يعمل على هذا الجهاز', 'error');
             }
         }
 
