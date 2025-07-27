@@ -313,11 +313,11 @@
         <h1>🎤 مُحَوِّل الصوت إلى نص</h1>
         
         <div class="info-banner">
-            <h3>🔧 Problème identifié et corrigé !</h3>
-            <p><strong>✅ Diagnostic:</strong> Recognition démarre mais s'arrête après 1 phrase (bug mobile)</p>
-            <p><strong>🔧 Solution:</strong> Système de relance automatique intelligent avec watchdog</p>
-            <p><strong>🔄 Nouveau système:</strong> Recrée une instance fraîche + surveillance continue</p>
-            <p><strong>⏱️ Délais optimisés:</strong> 500ms entre relances + watchdog 3 secondes</p>
+            <h3>🔊 Problème identifié : "Bip mais pas de texte"</h3>
+            <p><strong>✅ API fonctionne:</strong> Le bip confirme que SpeechRecognition marche</p>
+            <p><strong>❌ Problème:</strong> Google ne reconnaît pas votre voix/langue</p>
+            <p><strong>🔧 Solution:</strong> Diagnostic audio complet + tous les événements tracés</p>
+            <p><strong>📢 TEST:</strong> Parlez FORT et CLAIREMENT quand ça dit "PARLEZ MAINTENANT"</p>
         </div>
 
         <div class="punctuation-controls">
@@ -379,14 +379,14 @@
         </div>
 
         <div class="tips">
-            <h4>🔧 Système de relance automatique</h4>
+            <h4>🎤 Guide pour le test audio complet</h4>
             <ul>
-                <li>• <strong>🆕 Nouvelle instance:</strong> Crée un nouveau SpeechRecognition à chaque relance</li>
-                <li>• <strong>⏱️ Délai optimisé:</strong> 500ms entre les relances (évite les conflits)</li>
-                <li>• <strong>🐕 Watchdog:</strong> Surveillance toutes les 3 secondes pour détecter les arrêts</li>
-                <li>• <strong>📝 Logs détaillés:</strong> Chaque relance est tracée dans la console</li>
-                <li>• <strong>🔄 Test:</strong> Dites plusieurs phrases d'affilée pour tester la continuité</li>
-                <li>• <strong>🎯 Statut:</strong> Le message indique quand ça relance automatiquement</li>
+                <li>• <strong>🔊 PARLEZ FORT:</strong> Volume élevé, proche du micro</li>
+                <li>• <strong>📱 Tenez bien le téléphone:</strong> Micro près de la bouche</li>
+                <li>• <strong>🌍 Testez plusieurs langues:</strong> "Hello world" puis "مرحبا" puis "Bonjour"</li>
+                <li>• <strong>📊 Regardez les événements:</strong> "🗣️ PAROLE DÉTECTÉE" = bon signe</li>
+                <li>• <strong>🔇 Si "AUCUNE PAROLE":</strong> Parlez encore plus fort !</li>
+                <li>• <strong>⏰ Timeout 15 secondes:</strong> Assez de temps pour tester chaque langue</li>
             </ul>
         </div>
     </div>
