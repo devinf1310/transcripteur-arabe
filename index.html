@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎤 مُحَوِّل الصوت إلى نص - Android Optimized</title>
+    <title>🎤 مُحَوِّل الصوت إلى نص مع علامات الترقيم</title>
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         * {
@@ -42,22 +42,6 @@
             font-family: 'Amiri', serif;
         }
 
-        .mobile-info {
-            background: #e3f2fd;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            text-align: center;
-            border: 2px solid #2196F3;
-        }
-
-        .mobile-info h3 {
-            color: #1565c0;
-            margin-bottom: 15px;
-            font-family: 'Amiri', serif;
-            font-size: 1.3em;
-        }
-
         .debug-panel {
             background: #f8f9fa;
             border: 2px solid #28a745;
@@ -65,10 +49,10 @@
             padding: 15px;
             margin-bottom: 20px;
             font-family: monospace;
-            font-size: 11px;
+            font-size: 12px;
             text-align: left;
             direction: ltr;
-            max-height: 150px;
+            max-height: 120px;
             overflow-y: auto;
         }
 
@@ -295,17 +279,11 @@
 </head>
 <body>
     <div class="container">
-        <h1>🎤 مُحَوِّل الصوت إلى نص</h1>
+        <h1>🎤 مُحَوِّل الصوت إلى نص - نسخة مُحدثة</h1>
         
-        <div class="mobile-info">
-            <h3>📱 نسخة محسنة للجوال</h3>
-            <p><strong>للأندرويد:</strong> قل جملة واحدة، انتظر ثانيتين، ثم قل الجملة التالية</p>
-            <p><strong>نصيحة:</strong> تحدث ببطء وانتظر ظهور النص قبل المتابعة</p>
-        </div>
-
         <div class="debug-panel">
-            <h4>🔍 Debug - Mobile Tracking</h4>
-            <div id="debugLog">Surveillance mobile activée...</div>
+            <h4>🐛 Debug Info (Android Fix)</h4>
+            <div id="debugLog">Attente de debug...</div>
         </div>
 
         <div class="punctuation-controls">
@@ -318,10 +296,6 @@
                 <label>
                     <input type="checkbox" id="pauseBreaks" checked>
                     سطر جديد عند الوقفات الطويلة
-                </label>
-                <label>
-                    <input type="checkbox" id="mobileMode" checked>
-                    وضع الجوال المحسن
                 </label>
             </div>
         </div>
@@ -347,9 +321,9 @@
         </div>
 
         <div id="resultat" class="resultat empty">
-            سيظهر النص المحول هنا...
+            سيظهر النص المحول هنا مع علامات الترقيم التلقائية...
             
-            📱 للجوال: قل جملة، انتظر، ثم قل الجملة التالية
+            تحدث بشكل طبيعي، سيقوم النظام بإضافة علامات الترقيم حسب النبرة والوقفات.
         </div>
 
         <div id="wordCount" class="word-count">0 كلمة</div>
@@ -374,12 +348,12 @@
         let currentInterim = '';
         let isEditable = false;
         let lastPauseTime = Date.now();
-        let sentenceCount = 0;
-        let lastProcessedIndex = 0; // NOUVEAU : pour éviter les doublons
-        let mobileRestartTimer = null; // NOUVEAU : timer mobile
+        let audioContext = null;
+        let analyser = null;
+        let sentenceCount = 0; // Compteur pour debug
+        let lastFinalIndex = 0; // 🔥 NOUVEAU: éviter les doublons
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
         // 🐛 FONCTION DEBUG
         function addDebugLog(message) {
@@ -396,25 +370,22 @@
                 return;
             }
 
-            // Reset pour mobile
+            // Reset debug
             document.getElementById('debugLog').innerHTML = '';
             sentenceCount = 0;
-            lastProcessedIndex = 0;
-            
-            addDebugLog(`🚀 Démarrage ${isMobile ? 'MOBILE' : 'DESKTOP'}`);
-            addDebugLog(`🔧 Mode mobile optimisé: ${document.getElementById('mobileMode').checked}`);
+            addDebugLog('🚀 Démarrage reconnaissance vocale...');
             
             updateStatus('🔄 اختبار الوصول للميكروفون...', 'listening');
 
             navigator.mediaDevices.getUserMedia({ audio: true })
                 .then(stream => {
                     stream.getTracks().forEach(track => track.stop());
-                    addDebugLog('✅ Microphone OK');
+                    addDebugLog('✅ Microphone autorisé');
                     updateStatus('✅ الميكروفون OK - بدء التشغيل...', 'listening');
                     startSpeechRecognition();
                 })
                 .catch(error => {
-                    addDebugLog(`❌ Erreur micro: ${error.name}`);
+                    addDebugLog(`❌ Erreur microphone: ${error.name}`);
                     handleMicrophoneError(error);
                 });
         }
@@ -423,114 +394,88 @@
             try {
                 recognition = new SpeechRecognition();
                 recognition.lang = 'ar-SA';
-                
-                // 📱 CONFIGURATION SPÉCIALE MOBILE
-                if (isMobile && document.getElementById('mobileMode').checked) {
-                    recognition.continuous = false; // IMPORTANT: false sur mobile
-                    recognition.interimResults = true;
-                    addDebugLog('📱 CONFIG MOBILE: continuous=false, interim=true');
-                } else {
-                    recognition.continuous = true;
-                    recognition.interimResults = true;
-                    addDebugLog('💻 CONFIG DESKTOP: continuous=true, interim=true');
-                }
-
+                recognition.continuous = true;
+                recognition.interimResults = true;
                 recognition.maxAlternatives = 1;
+
+                addDebugLog('🎯 Configuration: ar-SA, continuous=true, interim=true');
 
                 recognition.onstart = function() {
                     isListening = true;
                     updateUI();
                     updateStatus('🎤 جاري الاستماع... تحدث بشكل طبيعي!', 'listening');
-                    addDebugLog('🎤 Recognition started');
+                    addDebugLog('🎤 Recognition démarrée');
                 };
 
                 recognition.onresult = function(event) {
-                    addDebugLog(`📝 onResult - index: ${event.resultIndex}, total: ${event.results.length}, lastProcessed: ${lastProcessedIndex}`);
+                    addDebugLog(`📝 Event reçu - resultIndex: ${event.resultIndex}, total: ${event.results.length}, lastFinalIndex: ${lastFinalIndex}`);
                     
                     let interimTranscript = '';
-                    let finalTranscript = '';
+                    let newFinalTranscript = '';
                     
-                    // 📱 MOBILE: traitement différent pour éviter les doublons
-                    for (let i = Math.max(event.resultIndex, lastProcessedIndex); i < event.results.length; i++) {
+                    // 🔥 LOGIQUE ANTI-DOUBLON : traiter seulement les NOUVEAUX résultats finaux
+                    for (let i = lastFinalIndex; i < event.results.length; i++) {
                         const result = event.results[i];
                         const transcript = result[0].transcript.trim();
                         
-                        if (!transcript) continue;
+                        addDebugLog(`📄 Résultat ${i}: "${transcript}" (final: ${result.isFinal}, index >= lastFinal: ${i >= lastFinalIndex})`);
                         
-                        addDebugLog(`📄 Résultat ${i}: "${transcript}" (final: ${result.isFinal}, confidence: ${result[0].confidence})`);
-                        
-                        if (result.isFinal) {
-                            finalTranscript += transcript;
-                            lastProcessedIndex = i + 1; // Important pour mobile
-                            addDebugLog(`✅ FINAL traité: "${transcript}"`);
-                        } else {
-                            interimTranscript += transcript;
+                        if (result.isFinal && transcript) {
+                            // ✅ NOUVEAU résultat final seulement
+                            newFinalTranscript += transcript;
+                            lastFinalIndex = i + 1; // 🔥 Marquer comme traité
+                            addDebugLog(`✅ NOUVEAU FINAL traité: "${transcript}", lastFinalIndex mis à jour: ${lastFinalIndex}`);
                         }
                     }
                     
-                    // Traitement du texte final
-                    if (finalTranscript) {
+                    // Collecter tous les intermédiaires APRÈS le dernier final
+                    for (let i = lastFinalIndex; i < event.results.length; i++) {
+                        const result = event.results[i];
+                        if (!result.isFinal && result[0].transcript.trim()) {
+                            interimTranscript += result[0].transcript.trim() + ' ';
+                        }
+                    }
+                    
+                    // Traitement du texte final NOUVEAU seulement
+                    if (newFinalTranscript) {
                         sentenceCount++;
-                        addDebugLog(`🔥 PROCESSING sentence ${sentenceCount}: "${finalTranscript}"`);
-                        processAndAddText(finalTranscript);
-                        
-                        // 📱 MOBILE: redémarrage automatique après phrase finale
-                        if (isMobile && document.getElementById('mobileMode').checked) {
-                            addDebugLog('📱 Mobile: préparation redémarrage...');
-                            // Petit délai pour laisser le navigateur mobile respirer
-                            clearTimeout(mobileRestartTimer);
-                            mobileRestartTimer = setTimeout(() => {
-                                if (isListening) {
-                                    addDebugLog('📱 Mobile: redémarrage reconnaissance...');
-                                    try {
-                                        recognition.start();
-                                    } catch (e) {
-                                        addDebugLog(`❌ Erreur redémarrage: ${e.message}`);
-                                    }
-                                }
-                            }, 1000); // 1 seconde de pause
-                        }
+                        addDebugLog(`🔥 PROCESSING NOUVELLE sentence ${sentenceCount}: "${newFinalTranscript}"`);
+                        processAndAddText(newFinalTranscript);
                     }
                     
-                    // Mise à jour affichage
-                    currentInterim = interimTranscript;
+                    // Mise à jour de l'affichage avec interim
+                    currentInterim = interimTranscript.trim();
                     displayTranscript();
                 };
 
                 recognition.onerror = function(event) {
-                    addDebugLog(`❌ Erreur: ${event.error}`);
+                    addDebugLog(`❌ Erreur reconnaissance: ${event.error}`);
                     handleRecognitionError(event.error);
                 };
 
                 recognition.onend = function() {
                     addDebugLog('🔚 Recognition ended');
-                    
-                    // 📱 MOBILE: pas de redémarrage automatique ici (géré dans onresult)
-                    if (!isMobile || !document.getElementById('mobileMode').checked) {
-                        if (isListening) {
-                            addDebugLog('💻 Desktop: redémarrage auto...');
-                            setTimeout(() => {
-                                if (isListening) {
-                                    try {
-                                        recognition.start();
-                                    } catch (e) {
-                                        addDebugLog(`❌ Erreur redémarrage desktop: ${e.message}`);
-                                    }
-                                }
-                            }, 100);
-                        }
+                    if (isListening) {
+                        addDebugLog('🔄 Redémarrage automatique...');
+                        // 🔥 RESET de l'index au redémarrage
+                        lastFinalIndex = 0;
+                        setTimeout(() => {
+                            if (isListening) {
+                                recognition.start();
+                            }
+                        }, 100);
                     }
                 };
 
                 recognition.start();
                 
             } catch (error) {
-                addDebugLog(`💥 Erreur init: ${error.message}`);
+                addDebugLog(`💥 Erreur démarrage: ${error.message}`);
                 updateStatus('❌ خطأ في بدء التعرف على الصوت', 'error');
             }
         }
 
-        // 🔧 FONCTION CORRIGÉE POUR MOBILE
+        // 🔧 FONCTION CORRIGÉE
         function processAndAddText(text) {
             if (!text || !text.trim()) {
                 addDebugLog('⚠️ Texte vide ignoré');
@@ -555,19 +500,21 @@
                 addDebugLog('📄 Saut de ligne ajouté (pause longue)');
             }
             
-            // 🚨 CORRECTION CRITIQUE : ajouter toujours le texte proprement
-            if (fullTranscript && !fullTranscript.endsWith(' ') && !fullTranscript.endsWith('\n')) {
+            // 🚨 CORRECTION CRITIQUE : ajouter TOUJOURS le texte
+            if (fullTranscript && !fullTranscript.endsWith(' ')) {
                 fullTranscript += ' ';
             }
             fullTranscript += processedText;
             
             lastPauseTime = now;
             
-            addDebugLog(`✅ AJOUTÉ. Total chars: ${fullTranscript.length}`);
-            addDebugLog(`📄 Fin du texte: "...${fullTranscript.slice(-30)}"`);
+            addDebugLog(`✅ Texte FINAL ajouté. Total: ${fullTranscript.length} chars`);
+            addDebugLog(`📄 Contenu actuel: "${fullTranscript.slice(-50)}..."`);
         }
 
         function addAutomaticPunctuation(text) {
+            addDebugLog(`🎯 Ponctuation pour: "${text}"`);
+            
             let result = text;
             
             // Questions
@@ -576,7 +523,7 @@
                 if (text.includes(word)) {
                     if (!result.endsWith('؟') && !result.endsWith('!') && !result.endsWith('.')) {
                         result = result.trim() + '؟';
-                        addDebugLog(`❓ Question: ${word}`);
+                        addDebugLog(`❓ Question détectée (${word}) -> "${result}"`);
                         return result;
                     }
                 }
@@ -588,22 +535,23 @@
                 if (text.includes(word)) {
                     if (!result.endsWith('؟') && !result.endsWith('!') && !result.endsWith('.')) {
                         result = result.trim() + '!';
-                        addDebugLog(`❗ Exclamation: ${word}`);
+                        addDebugLog(`❗ Exclamation détectée (${word}) -> "${result}"`);
                         return result;
                     }
                 }
             }
             
-            // Point par défaut
+            // Point par défaut pour phrases longues
             const wordCount = text.trim().split(/\s+/).length;
-            if (wordCount >= 2) { // Réduit à 2 mots pour mobile
+            if (wordCount >= 3) {
                 if (!result.endsWith('؟') && !result.endsWith('!') && !result.endsWith('.')) {
                     result = result.trim() + '.';
-                    addDebugLog(`⚫ Point ajouté (${wordCount} mots)`);
+                    addDebugLog(`⚫ Point par défaut ajouté -> "${result}"`);
                     return result;
                 }
             }
             
+            addDebugLog(`➡️ Aucune ponctuation ajoutée`);
             return text;
         }
 
@@ -615,7 +563,10 @@
                 addDebugLog('🛑 Recognition arrêtée');
             }
             
-            clearTimeout(mobileRestartTimer);
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
             
             updateUI();
             updateStatus('🔴 توقف - انتهى التحويل', 'stopped');
@@ -629,9 +580,9 @@
             if (!fullTranscript && !currentInterim) {
                 resultatDiv.classList.add('empty');
                 resultatDiv.innerHTML = `
-                    سيظهر النص المحول هنا...
+                    سيظهر النص المحول هنا مع علامات الترقيم التلقائية...
                     
-                    📱 للجوال: قل جملة، انتظر، ثم قل الجملة التالية
+                    تحدث بشكل طبيعي، سيقوم النظام بإضافة علامات الترقيم حسب النبرة والوقفات.
                 `;
                 return;
             }
@@ -668,7 +619,7 @@
                     updateWordCount();
                 });
                 
-                updateStatus('✏️ وضع التعديل مفعل', 'stopped');
+                updateStatus('✏️ وضع التعديل مفعل - عدل النص مباشرة', 'stopped');
                 
             } else {
                 resultatDiv.contentEditable = false;
@@ -686,14 +637,14 @@
             currentInterim = '';
             isEditable = false;
             sentenceCount = 0;
-            lastProcessedIndex = 0;
+            lastFinalIndex = 0; // 🔥 RESET de l'index
             const resultatDiv = document.getElementById('resultat');
             resultatDiv.contentEditable = false;
             resultatDiv.classList.remove('editable');
             document.getElementById('editBtnText').textContent = 'تعديل';
             document.getElementById('debugLog').innerHTML = 'Debug vidé...';
             displayTranscript();
-            addDebugLog('🗑️ Reset complet');
+            addDebugLog('🗑️ Tout vidé, lastFinalIndex reset');
         }
 
         function copyText() {
@@ -701,6 +652,9 @@
             if (text) {
                 navigator.clipboard.writeText(text).then(() => {
                     updateStatus('📋 تم نسخ النص إلى الحافظة!', 'stopped');
+                    setTimeout(() => {
+                        updateStatus('🔴 توقف - انتهى التحويل', 'stopped');
+                    }, 2000);
                 }).catch(() => {
                     const textArea = document.createElement('textarea');
                     textArea.value = text;
@@ -770,20 +724,6 @@
             switch(error) {
                 case 'no-speech':
                     errorMessage = '🔇 لم يتم اكتشاف أي كلام';
-                    if (isMobile) {
-                        // Sur mobile, restart automatiquement après no-speech
-                        setTimeout(() => {
-                            if (isListening) {
-                                addDebugLog('📱 Redémarrage après no-speech...');
-                                try {
-                                    recognition.start();
-                                } catch (e) {
-                                    addDebugLog(`❌ Échec redémarrage: ${e.message}`);
-                                }
-                            }
-                        }, 1000);
-                        return; // Ne pas arrêter complètement
-                    }
                     break;
                 case 'audio-capture':
                     errorMessage = '🎤 لا يمكن الوصول للميكروفون';
@@ -799,19 +739,13 @@
             }
             
             updateStatus(errorMessage, 'error');
-            addDebugLog(`❌ Erreur handled: ${error}`);
-            
-            // Pas d'arrêt automatique pour certaines erreurs mobiles
-            if (!isMobile || (error !== 'no-speech' && error !== 'aborted')) {
-                stopRecognition();
-            }
+            stopRecognition();
         }
 
         // Initialisation
         document.addEventListener('DOMContentLoaded', function() {
             updateWordCount();
-            addDebugLog(`✅ Init - Platform: ${isMobile ? 'MOBILE' : 'DESKTOP'}`);
-            addDebugLog(`🔧 User Agent: ${navigator.userAgent}`);
+            addDebugLog('✅ Application initialisée');
         });
     </script>
 </body>
