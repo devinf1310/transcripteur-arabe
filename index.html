@@ -313,11 +313,11 @@
         <h1>🎤 مُحَوِّل الصوت إلى نص</h1>
         
         <div class="info-banner">
-            <h3>🔧 Diagnostic - Micro fonctionne mais pas de texte</h3>
-            <p><strong>✅ Microphone OK:</strong> La barre de volume bouge</p>
-            <p><strong>❓ Problème:</strong> API Speech Recognition ne répond pas</p>
-            <p><strong>🔍 Vérification:</strong> Ouvrez la console (F12) pour voir les logs</p>
-            <p><strong>💡 Solutions:</strong> Le système va essayer plusieurs langues et modes</p>
+            <h3>🔧 Problème identifié et corrigé !</h3>
+            <p><strong>✅ Diagnostic:</strong> Recognition démarre mais s'arrête après 1 phrase (bug mobile)</p>
+            <p><strong>🔧 Solution:</strong> Système de relance automatique intelligent avec watchdog</p>
+            <p><strong>🔄 Nouveau système:</strong> Recrée une instance fraîche + surveillance continue</p>
+            <p><strong>⏱️ Délais optimisés:</strong> 500ms entre relances + watchdog 3 secondes</p>
         </div>
 
         <div class="punctuation-controls">
@@ -379,14 +379,14 @@
         </div>
 
         <div class="tips">
-            <h4>🔍 Étapes de diagnostic</h4>
+            <h4>🔧 Système de relance automatique</h4>
             <ul>
-                <li>• <strong>📱 Ouvrez la console:</strong> Sur mobile, allez dans Paramètres Chrome → Plus d'outils → Console développeur</li>
-                <li>• <strong>🎤 Testez d'abord en anglais:</strong> Dites "Hello world" pour voir si ça fonctionne</li>
-                <li>• <strong>🔄 Si échec en arabe:</strong> Le système basculera automatiquement en anglais</li>
-                <li>• <strong>🌍 Problème fréquent:</strong> L'arabe n'est pas disponible sur tous les appareils</li>
-                <li>• <strong>📞 Test rapide:</strong> Dites quelque chose et regardez les logs dans la console</li>
-                <li>• <strong>🔧 Solutions:</strong> Chrome mobile → Menu → Plus d'outils → Console développeur</li>
+                <li>• <strong>🆕 Nouvelle instance:</strong> Crée un nouveau SpeechRecognition à chaque relance</li>
+                <li>• <strong>⏱️ Délai optimisé:</strong> 500ms entre les relances (évite les conflits)</li>
+                <li>• <strong>🐕 Watchdog:</strong> Surveillance toutes les 3 secondes pour détecter les arrêts</li>
+                <li>• <strong>📝 Logs détaillés:</strong> Chaque relance est tracée dans la console</li>
+                <li>• <strong>🔄 Test:</strong> Dites plusieurs phrases d'affilée pour tester la continuité</li>
+                <li>• <strong>🎯 Statut:</strong> Le message indique quand ça relance automatiquement</li>
             </ul>
         </div>
     </div>
@@ -826,14 +826,24 @@
         }
 
         function stopRecognition() {
+            console.log('🛑 Arrêt de la reconnaissance...');
+            
             if (recognition) {
                 isListening = false;
-                recognition.stop();
+                try {
+                    recognition.stop();
+                } catch (error) {
+                    console.log('Erreur arrêt recognition:', error.message);
+                }
                 recognition = null;
             }
             
             if (audioContext) {
-                audioContext.close();
+                try {
+                    audioContext.close();
+                } catch (error) {
+                    console.log('Erreur fermeture audio context:', error.message);
+                }
                 audioContext = null;
             }
             
@@ -841,6 +851,8 @@
             updateStatus('🔴 توقف - انتهى التحويل', 'stopped');
             currentInterim = '';
             displayTranscript();
+            
+            console.log('✅ Reconnaissance arrêtée complètement');
         }
 
         function displayTranscript() {
