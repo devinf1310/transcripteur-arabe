@@ -313,11 +313,11 @@
         <h1>🎤 مُحَوِّل الصوت إلى نص</h1>
         
         <div class="info-banner">
-            <h3>✅ Solution trouvée : Problème confirmé par la communauté !</h3>
-            <p><strong>🔍 Recherche terminée:</strong> Ce bug existe chez TOUS les développeurs mobile</p>
-            <p><strong>🏆 Solution éprouvée:</strong> "Restart on End" - la méthode utilisée par la communauté</p>
-            <p><strong>🔧 Implémentation:</strong> continuous=false + redémarrage automatique sur onend</p>
-            <p><strong>📱 Spécifique mobile:</strong> Chrome mobile a cette limitation connue depuis des années</p>
+            <h3>🔍 Diagnostic final : Test étape par étape</h3>
+            <p><strong>📊 Plan:</strong> Test simple en anglais d'abord → Mode continu si OK</p>
+            <p><strong>🎯 Objectif:</strong> Identifier précisément où ça bloque</p>
+            <p><strong>📱 Instructions:</strong> Dites "HELLO WORLD" en ANGLAIS quand demandé</p>
+            <p><strong>🔧 Si échec:</strong> Guide de dépannage complet avec solutions alternatives</p>
         </div>
 
         <div class="punctuation-controls">
@@ -379,14 +379,14 @@
         </div>
 
         <div class="tips">
-            <h4>🏆 Solution validée par la communauté Stack Overflow</h4>
+            <h4>🧪 Test de diagnostic complet</h4>
             <ul>
-                <li>• <strong>✅ Problème confirmé:</strong> Tous les dev rencontrent ce bug sur mobile Chrome</li>
-                <li>• <strong>🔧 Solution standard:</strong> continuous=false + restart dans onend() </li>
-                <li>• <strong>⏱️ Délai 300ms:</strong> Évite les boucles infinies (testé par la communauté)</li>
-                <li>• <strong>📝 Test maintenant:</strong> Dites une phrase → pause → autre phrase</li>
-                <li>• <strong>🔄 Dans la console:</strong> "Recognition ended - RESTART AUTOMATIQUE"</li>
-                <li>• <strong>💡 Cette solution:</strong> Utilisée dans annyang.js et autres libs populaires</li>
+                <li>• <strong>📝 Étape 1:</strong> Test simple en anglais (une phrase)</li>
+                <li>• <strong>✅ Si ça marche:</strong> Passage automatique au mode continu</li>
+                <li>• <strong>❌ Si ça échoue:</strong> Guide de dépannage détaillé</li>
+                <li>• <strong>🎤 Instructions:</strong> Dites "HELLO WORLD" clairement en anglais</li>
+                <li>• <strong>📊 Console:</strong> Tous les événements sont tracés</li>
+                <li>• <strong>🔧 Alternatives:</strong> Solutions de rechange si rien ne marche</li>
             </ul>
         </div>
     </div>
@@ -828,9 +828,12 @@
         function stopRecognition() {
             console.log('🛑 Arrêt de la reconnaissance...');
             
-            // Arrêter le système de redémarrage automatique
+            // Arrêter tous les systèmes
             if (window.stopContinuousRecognition) {
                 window.stopContinuousRecognition();
+            }
+            if (window.stopSimpleContinuous) {
+                window.stopSimpleContinuous();
             }
             
             if (recognition) {
