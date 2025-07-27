@@ -313,11 +313,11 @@
         <h1>🎤 مُحَوِّل الصوت إلى نص</h1>
         
         <div class="info-banner">
-            <h3>🔊 Problème identifié : "Bip mais pas de texte"</h3>
-            <p><strong>✅ API fonctionne:</strong> Le bip confirme que SpeechRecognition marche</p>
-            <p><strong>❌ Problème:</strong> Google ne reconnaît pas votre voix/langue</p>
-            <p><strong>🔧 Solution:</strong> Diagnostic audio complet + tous les événements tracés</p>
-            <p><strong>📢 TEST:</strong> Parlez FORT et CLAIREMENT quand ça dit "PARLEZ MAINTENANT"</p>
+            <h3>🔄 Solution AGRESSIVE au problème "écrit 1 fois puis s'arrête"</h3>
+            <p><strong>✅ Problème confirmé:</strong> SpeechRecognition fonctionne mais s'arrête après 1 phrase</p>
+            <p><strong>🔧 Solution:</strong> Redémarrage automatique TRÈS agressif toutes les 10 secondes</p>
+            <p><strong>⚡ Stratégie:</strong> Force restart + watchdog + restart après chaque résultat</p>
+            <p><strong>🎯 Objectif:</strong> Maintenir la transcription continue en permanence</p>
         </div>
 
         <div class="punctuation-controls">
@@ -379,14 +379,14 @@
         </div>
 
         <div class="tips">
-            <h4>🎤 Guide pour le test audio complet</h4>
+            <h4>🔄 Stratégie de redémarrage AGRESSIVE</h4>
             <ul>
-                <li>• <strong>🔊 PARLEZ FORT:</strong> Volume élevé, proche du micro</li>
-                <li>• <strong>📱 Tenez bien le téléphone:</strong> Micro près de la bouche</li>
-                <li>• <strong>🌍 Testez plusieurs langues:</strong> "Hello world" puis "مرحبا" puis "Bonjour"</li>
-                <li>• <strong>📊 Regardez les événements:</strong> "🗣️ PAROLE DÉTECTÉE" = bon signe</li>
-                <li>• <strong>🔇 Si "AUCUNE PAROLE":</strong> Parlez encore plus fort !</li>
-                <li>• <strong>⏰ Timeout 15 secondes:</strong> Assez de temps pour tester chaque langue</li>
+                <li>• <strong>⏰ Redémarrage toutes les 10s:</strong> Force restart même si ça marche</li>
+                <li>• <strong>🔄 Restart après chaque phrase:</strong> Redémarre 1s après chaque résultat</li>
+                <li>• <strong>🚨 Watchdog 5s:</strong> Surveille et relance si inactif</li>
+                <li>• <strong>💥 Abort + restart:</strong> Arrêt brutal puis redémarrage</li>
+                <li>• <strong>📝 Test:</strong> Dites une phrase, attendez, dites une autre → doit continuer</li>
+                <li>• <strong>🔍 Console:</strong> Vous verrez "REDÉMARRAGE FORCÉ" régulièrement</li>
             </ul>
         </div>
     </div>
