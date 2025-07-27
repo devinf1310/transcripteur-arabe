@@ -42,28 +42,24 @@
             font-family: 'Amiri', serif;
         }
 
-        .info-banner {
-            background: #e3f2fd;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 30px;
-            text-align: right;
-            border-right: 4px solid #2196F3;
+        .debug-panel {
+            background: #f8f9fa;
+            border: 2px solid #28a745;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-family: monospace;
+            font-size: 12px;
+            text-align: left;
+            direction: ltr;
+            max-height: 120px;
+            overflow-y: auto;
         }
 
-        .info-banner h3 {
-            color: #1565c0;
-            margin-bottom: 15px;
-            text-align: center;
-            font-family: 'Amiri', serif;
-            font-size: 1.3em;
-        }
-
-        .info-banner p {
-            color: #1565c0;
-            line-height: 1.8;
+        .debug-panel h4 {
+            color: #28a745;
             margin-bottom: 10px;
-            font-size: 15px;
+            text-align: center;
         }
 
         .punctuation-controls {
@@ -259,33 +255,6 @@
             margin-top: 20px;
         }
 
-        .tips {
-            background: #e8f5e8;
-            border-radius: 15px;
-            padding: 20px;
-            margin-top: 25px;
-            text-align: right;
-            border-right: 4px solid #4caf50;
-            font-size: 14px;
-        }
-
-        .tips h4 {
-            color: #2e7d32;
-            margin-bottom: 15px;
-            font-family: 'Amiri', serif;
-            font-size: 1.1em;
-        }
-
-        .tips ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .tips li {
-            margin-bottom: 8px;
-            padding-right: 15px;
-        }
-
         @media (max-width: 768px) {
             .container {
                 padding: 20px;
@@ -310,14 +279,11 @@
 </head>
 <body>
     <div class="container">
-        <h1>🎤 مُحَوِّل الصوت إلى نص</h1>
+        <h1>🎤 مُحَوِّل الصوت إلى نص - نسخة مُحدثة</h1>
         
-        <div class="info-banner">
-            <h3>🔍 Diagnostic ultra-basique : Étape par étape</h3>
-            <p><strong>🎯 Objectif:</strong> Identifier à quelle étape exacte ça bloque</p>
-            <p><strong>📊 5 étapes:</strong> APIs → Microphone → Création → Démarrage → Test vocal</p>
-            <p><strong>⏱️ Timing:</strong> Chaque étape prend 1 seconde, regardez les messages</p>
-            <p><strong>❌ Si ça bloque:</strong> Message d'erreur précis + guide de solutions</p>
+        <div class="debug-panel">
+            <h4>🐛 Debug Info (Android Fix)</h4>
+            <div id="debugLog">Attente de debug...</div>
         </div>
 
         <div class="punctuation-controls">
@@ -326,10 +292,6 @@
                 <label>
                     <input type="checkbox" id="autoPunctuation" checked>
                     علامات الترقيم التلقائية
-                </label>
-                <label>
-                    <input type="checkbox" id="autoCapitalization" checked>
-                    الأحرف الكبيرة التلقائية
                 </label>
                 <label>
                     <input type="checkbox" id="pauseBreaks" checked>
@@ -377,18 +339,6 @@
                 💾 تحميل الملف
             </button>
         </div>
-
-        <div class="tips">
-            <h4>📋 Diagnostic en 5 étapes précises</h4>
-            <ul>
-                <li>• <strong>🔍 ÉTAPE 1:</strong> Vérifications de base (navigateur, protocole, sécurité)</li>
-                <li>• <strong>🔍 ÉTAPE 2:</strong> Vérification APIs (SpeechRecognition, MediaDevices)</li>
-                <li>• <strong>🔍 ÉTAPE 3:</strong> Test microphone (permissions, accès)</li>
-                <li>• <strong>🔍 ÉTAPE 4:</strong> Test création SpeechRecognition (objet, config)</li>
-                <li>• <strong>🔍 ÉTAPE 5:</strong> Test démarrage (start, événements)</li>
-                <li>• <strong>🎤 Si arrive à l'étape 5:</strong> Dites "HELLO" en anglais</li>
-            </ul>
-        </div>
     </div>
 
     <script>
@@ -400,8 +350,18 @@
         let lastPauseTime = Date.now();
         let audioContext = null;
         let analyser = null;
+        let sentenceCount = 0; // Compteur pour debug
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        // 🐛 FONCTION DEBUG
+        function addDebugLog(message) {
+            const debugDiv = document.getElementById('debugLog');
+            const timestamp = new Date().toLocaleTimeString();
+            debugDiv.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            debugDiv.scrollTop = debugDiv.scrollHeight;
+            console.log(`[DEBUG] ${message}`);
+        }
 
         function startRecognition() {
             if (!SpeechRecognition) {
@@ -409,449 +369,191 @@
                 return;
             }
 
+            // Reset debug
+            document.getElementById('debugLog').innerHTML = '';
+            sentenceCount = 0;
+            addDebugLog('🚀 Démarrage reconnaissance vocale...');
+            
             updateStatus('🔄 اختبار الوصول للميكروفون...', 'listening');
 
-            // Test d'abord l'accès au microphone
             navigator.mediaDevices.getUserMedia({ audio: true })
                 .then(stream => {
                     stream.getTracks().forEach(track => track.stop());
-                    
+                    addDebugLog('✅ Microphone autorisé');
                     updateStatus('✅ الميكروفون OK - بدء التشغيل...', 'listening');
-                    initAudioContext();
                     startSpeechRecognition();
                 })
                 .catch(error => {
+                    addDebugLog(`❌ Erreur microphone: ${error.name}`);
                     handleMicrophoneError(error);
                 });
         }
 
         function startSpeechRecognition() {
             try {
-                console.log('🎤 Démarrage de la reconnaissance vocale...');
-                
                 recognition = new SpeechRecognition();
-                
-                // Configuration pour l'arabe
-                recognition.lang = 'ar-SA'; // العربية السعودية
+                recognition.lang = 'ar-SA';
                 recognition.continuous = true;
                 recognition.interimResults = true;
                 recognition.maxAlternatives = 1;
-                
-                // Gestion du démarrage
+
+                addDebugLog('🎯 Configuration: ar-SA, continuous=true, interim=true');
+
                 recognition.onstart = function() {
-                    console.log('✅ Reconnaissance vocale démarrée');
                     isListening = true;
                     updateUI();
-                    updateStatus('🎤 جاري الاستماع... تحدث الآن!', 'listening');
+                    updateStatus('🎤 جاري الاستماع... تحدث بشكل طبيعي!', 'listening');
+                    addDebugLog('🎤 Recognition démarrée');
                 };
 
-                // Gestion des résultats
                 recognition.onresult = function(event) {
-                    console.log('📝 Résultat reçu:', event);
+                    addDebugLog(`📝 Event reçu - resultIndex: ${event.resultIndex}, total: ${event.results.length}`);
                     
                     let interimTranscript = '';
                     let finalTranscript = '';
                     
+                    // NOUVELLE LOGIQUE : traiter tous les résultats depuis le dernier index
                     for (let i = event.resultIndex; i < event.results.length; i++) {
-                        const transcript = event.results[i][0].transcript;
-                        console.log(`Segment ${i}:`, transcript, 'Final:', event.results[i].isFinal);
+                        const result = event.results[i];
+                        const transcript = result[0].transcript.trim();
                         
-                        if (event.results[i].isFinal) {
+                        addDebugLog(`📄 Résultat ${i}: "${transcript}" (final: ${result.isFinal})`);
+                        
+                        if (result.isFinal && transcript) {
                             finalTranscript += transcript;
-                        } else {
+                            addDebugLog(`✅ FINAL ajouté: "${transcript}"`);
+                        } else if (transcript) {
                             interimTranscript += transcript;
                         }
                     }
                     
+                    // Traitement du texte final
                     if (finalTranscript) {
-                        console.log('✅ Texte final reçu:', finalTranscript);
+                        sentenceCount++;
+                        addDebugLog(`🔥 PROCESSING sentence ${sentenceCount}: "${finalTranscript}"`);
                         processAndAddText(finalTranscript);
                     }
                     
+                    // Mise à jour de l'affichage avec interim
                     currentInterim = interimTranscript;
                     displayTranscript();
                 };
 
-                // Gestion des erreurs
                 recognition.onerror = function(event) {
-                    console.error('❌ Erreur reconnaissance vocale:', event.error);
-                    
-                    let errorMessage = '';
-                    switch(event.error) {
-                        case 'no-speech':
-                            errorMessage = '🔇 لم يتم سماع أي كلام - جرب التحدث بصوت أعلى';
-                            break;
-                        case 'audio-capture':
-                            errorMessage = '🎤 مشكلة في التقاط الصوت';
-                            break;
-                        case 'not-allowed':
-                            errorMessage = '🚫 لم يتم السماح بالوصول للميكروفون';
-                            break;
-                        case 'network':
-                            errorMessage = '🌐 مشكلة في الاتصال بالإنترنت';
-                            break;
-                        case 'language-not-supported':
-                            errorMessage = '🌍 اللغة العربية غير مدعومة - جرب en-US';
-                            // Essayer l'anglais comme fallback
-                            recognition.lang = 'en-US';
-                            break;
-                        case 'service-not-allowed':
-                            errorMessage = '⛔ خدمة التعرف على الصوت غير متاحة';
-                            break;
-                        default:
-                            errorMessage = '❌ خطأ غير محدد: ' + event.error;
-                    }
-                    
-                    updateStatus(errorMessage, 'error');
+                    addDebugLog(`❌ Erreur reconnaissance: ${event.error}`);
+                    handleRecognitionError(event.error);
                 };
 
-                // Gestion de l'arrêt
                 recognition.onend = function() {
-                    console.log('🔄 Reconnaissance vocale arrêtée, redémarrage...');
-                    
+                    addDebugLog('🔚 Recognition ended');
                     if (isListening) {
-                        // Redémarrage automatique après une courte pause
+                        addDebugLog('🔄 Redémarrage automatique...');
                         setTimeout(() => {
                             if (isListening) {
-                                console.log('🔄 Redémarrage automatique...');
-                                try {
-                                    recognition.start();
-                                } catch (error) {
-                                    console.error('Erreur redémarrage:', error);
-                                    updateStatus('❌ خطأ في إعادة التشغيل', 'error');
-                                }
+                                recognition.start();
                             }
                         }, 100);
                     }
                 };
 
-                // Démarrage
-                console.log('🚀 Tentative de démarrage...');
                 recognition.start();
                 
             } catch (error) {
-                console.error('❌ Erreur lors de l\'initialisation:', error);
-                updateStatus('❌ خطأ في تهيئة التعرف على الصوت', 'error');
-                
-                // Essayer avec des paramètres différents
-                tryAlternativeRecognition();
+                addDebugLog(`💥 Erreur démarrage: ${error.message}`);
+                updateStatus('❌ خطأ في بدء التعرف على الصوت', 'error');
             }
         }
 
-        // Fonction de fallback avec paramètres différents
-        function tryAlternativeRecognition() {
-            console.log('🔄 Essai avec paramètres alternatifs...');
-            
-            try {
-                recognition = new SpeechRecognition();
-                recognition.lang = 'en-US'; // Anglais comme fallback
-                recognition.continuous = false; // Mode non-continu
-                recognition.interimResults = false; // Pas de résultats intermédiaires
-                
-                recognition.onresult = function(event) {
-                    const transcript = event.results[0][0].transcript;
-                    console.log('📝 Résultat (EN):', transcript);
-                    processAndAddText(transcript);
-                    displayTranscript();
-                    
-                    // Redémarrer pour le prochain segment
-                    if (isListening) {
-                        setTimeout(() => recognition.start(), 500);
-                    }
-                };
-                
-                recognition.onerror = function(event) {
-                    console.error('❌ Erreur mode alternatif:', event.error);
-                    updateStatus('❌ لا يمكن تشغيل التعرف على الصوت', 'error');
-                };
-                
-                recognition.start();
-                updateStatus('🎤 وضع بديل - تحدث بالإنجليزية', 'listening');
-                
-            } catch (error) {
-                console.error('❌ Échec complet:', error);
-                updateStatus('❌ التعرف على الصوت لا يعمل على هذا الجهاز', 'error');
-            }
-        }
-
+        // 🔧 FONCTION CORRIGÉE
         function processAndAddText(text) {
-            if (!text.trim()) return;
+            if (!text || !text.trim()) {
+                addDebugLog('⚠️ Texte vide ignoré');
+                return;
+            }
             
             let processedText = text.trim();
+            addDebugLog(`📝 AVANT traitement: "${processedText}"`);
             
-            // DÉSACTIVÉ TEMPORAIREMENT : Commandes manuelles
-            // const commandProcessedText = processPunctuationCommands(processedText);
-            
-            // FOCUS SUR : Ponctuation automatique seulement
+            // Application de la ponctuation automatique
             if (document.getElementById('autoPunctuation').checked) {
                 processedText = addAutomaticPunctuation(processedText);
-                console.log('🤖 Ponctuation automatique appliquée');
+                addDebugLog(`🤖 APRÈS ponctuation: "${processedText}"`);
             }
             
-            // التحقق من الوقفات الطويلة
+            // Gestion des pauses longues
             const now = Date.now();
             const timeSinceLastPause = now - lastPauseTime;
             
             if (document.getElementById('pauseBreaks').checked && timeSinceLastPause > 3000 && fullTranscript) {
                 fullTranscript += '\n\n';
+                addDebugLog('📄 Saut de ligne ajouté (pause longue)');
             }
             
-            fullTranscript += processedText + ' ';
+            // 🚨 CORRECTION CRITIQUE : ajouter TOUJOURS le texte
+            if (fullTranscript && !fullTranscript.endsWith(' ')) {
+                fullTranscript += ' ';
+            }
+            fullTranscript += processedText;
+            
             lastPauseTime = now;
-        }
-
-        function processPunctuationCommands(text) {
-            const punctuationMap = [
-                ['الشرطة المائلة للأمام', '/'],
-                ['الشرطة المائلة للخلف', '\\'],
-                ['شرطة مائلة معكوسة', '\\'],
-                ['الشرطه المائله للامام', '/'],
-                ['الشرطه المائله للخلف', '\\'],
-                ['شرطه مائله معكوسه', '\\'],
-                ['قوس مربع مفتوح', '['],
-                ['قوس مربع مغلق', ']'],
-                ['قوس معقوف مفتوح', '{'],
-                ['قوس معقوف مغلق', '}'],
-                ['فاصلة منقوطة', ';'],
-                ['نقطة استفهام', '؟'],
-                ['نقطه استفهام', '؟'],
-                ['علامة استفهام', '؟'],
-                ['نقطة تعجب', '!'],
-                ['نقطه تعجب', '!'],
-                ['علامة تعجب', '!'],
-                ['علامة اقتباس', '"'],
-                ['علامة دولار', '$'],
-                ['علامة تساوي', '='],
-                ['علامة زائد', '+'],
-                ['علامة أت', '@'],
-                ['عد إلى السطر', '\n'],
-                ['عد الى السطر', '\n'],
-                ['عود إلى السطر', '\n'],
-                ['عود الى السطر', '\n'],
-                ['اعود الى السطر', '\n'],
-                ['اعود إلى السطر', '\n'],
-                ['شرطة مائلة', '/'],
-                ['شرطه مائله', '/'],
-                ['سطر جديد', '\n'],
-                ['قوس مفتوح', '('],
-                ['قوس مغلق', ')'],
-                ['فاصلة عليا', "'"],
-                ['في المائة', '%'],
-                ['نقطتين', ':'],
-                ['نقطتان', ':'],
-                ['فاصلة', '،'],
-                ['نقطة', '.'],
-                ['نقطه', '.'],
-                ['فاصل', '،'],
-                ['مقطع', ';'],
-                ['شرطة', '-'],
-                ['نجمة', '*'],
-                ['نجمه', '*'],
-                ['اقتباس', '"'],
-                ['بالمائة', '%'],
-                ['أمبرسند', '&'],
-                ['تساوي', '='],
-                ['يساوي', '='],
-                ['دولار', '$'],
-                ['زائد', '+'],
-                ['هاش', '#'],
-                ['رقم', '#'],
-                ['مطه', '-'],
-                ['مع', '+'],
-                ['أت', '@'],
-                
-                ['exclamation point', '!'],
-                ['exclamation mark', '!'],
-                ['question mark', '؟'],
-                ['quotation mark', '"'],
-                ['open parenthesis', '('],
-                ['close parenthesis', ')'],
-                ['open bracket', '['],
-                ['close bracket', ']'],
-                ['open brace', '{'],
-                ['close brace', '}'],
-                ['forward slash', '/'],
-                ['plus sign', '+'],
-                ['dollar sign', '$'],
-                ['equal sign', '='],
-                ['line break', '\n'],
-                ['new line', '\n'],
-                ['semicolon', ';'],
-                ['backslash', '\\'],
-                ['asterisk', '*'],
-                ['at sign', '@'],
-                ['apostrophe', "'"],
-                ['percentage', '%'],
-                ['ampersand', '&'],
-                ['hashtag', '#'],
-                ['period', '.'],
-                ['comma', '،'],
-                ['colon', ':'],
-                ['hyphen', '-'],
-                ['equals', '='],
-                ['percent', '%'],
-                ['quote', '"'],
-                ['slash', '/'],
-                ['star', '*'],
-                ['plus', '+'],
-                ['dash', '-'],
-                ['hash', '#'],
-                ['dot', '.'],
-                
-                ['point d\'interrogation', '؟'],
-                ['point d\'exclamation', '!'],
-                ['barre oblique inverse', '\\'],
-                ['retour à la ligne', '\n'],
-                ['nouvelle ligne', '\n'],
-                ['parenthèse ouverte', '('],
-                ['parenthèse fermée', ')'],
-                ['crochet ouvrant', '['],
-                ['crochet fermant', ']'],
-                ['accolade ouverte', '{'],
-                ['accolade fermée', '}'],
-                ['trait d\'union', '-'],
-                ['point-virgule', ';'],
-                ['signe plus', '+'],
-                ['signe égal', '='],
-                ['esperluette', '&'],
-                ['astérisque', '*'],
-                ['guillemets', '"'],
-                ['apostrophe', "'"],
-                ['deux points', ':'],
-                ['pourcent', '%'],
-                ['arobase', '@'],
-                ['antislash', '\\'],
-                ['virgule', '،'],
-                ['tiret', '-'],
-                ['point', '.'],
-                ['dollar', '$'],
-                ['dièse', '#'],
-                ['étoile', '*'],
-                ['égal', '=']
-            ];
-
-            let processedText = text;
             
-            for (const [command, symbol] of punctuationMap) {
-                const exactMatch = new RegExp(`^${command.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
-                const wordBoundaryMatch = new RegExp(`\\b${command.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
-                
-                if (exactMatch.test(processedText.trim())) {
-                    return symbol;
-                }
-                
-                processedText = processedText.replace(wordBoundaryMatch, (match, offset, string) => {
-                    const beforeContext = string.substring(Math.max(0, offset - 10), offset).trim();
-                    const afterContext = string.substring(offset + match.length, Math.min(string.length, offset + match.length + 10)).trim();
-                    
-                    const isCommandContext = (
-                        afterContext === '' ||
-                        afterContext.startsWith(' ') ||
-                        offset + match.length === string.length
-                    );
-                    
-                    const notPartOfWord = !beforeContext.match(/[أ-ي]$/) || beforeContext.endsWith(' ');
-                    
-                    if (isCommandContext && notPartOfWord) {
-                        return symbol;
-                    }
-                    
-                    return match;
-                });
-            }
-            
-            processedText = processedText.replace(/\s+([.,،؟!:;])/g, '$1');
-            processedText = processedText.replace(/([.,،؟!:;])\s*$/g, '$1');
-            
-            return processedText;
+            addDebugLog(`✅ Texte FINAL ajouté. Total: ${fullTranscript.length} chars`);
+            addDebugLog(`📄 Contenu actuel: "${fullTranscript.slice(-50)}..."`);
         }
 
         function addAutomaticPunctuation(text) {
-            console.log('🎯 DÉBUT - Texte reçu pour ponctuation:', `"${text}"`);
+            addDebugLog(`🎯 Ponctuation pour: "${text}"`);
             
             let result = text;
             
-            // 1. علامات الاستفهام للأسئلة (plus simple)
+            // Questions
             const questionWords = ['لماذا', 'كيف', 'متى', 'أين', 'من', 'ماذا', 'ما', 'هل', 'كم', 'أي'];
             for (const word of questionWords) {
                 if (text.includes(word)) {
-                    console.log(`❓ MOT QUESTION trouvé: "${word}"`);
                     if (!result.endsWith('؟') && !result.endsWith('!') && !result.endsWith('.')) {
                         result = result.trim() + '؟';
-                        console.log(`✅ POINT D'INTERROGATION ajouté: "${result}"`);
+                        addDebugLog(`❓ Question détectée (${word}) -> "${result}"`);
                         return result;
                     }
                 }
             }
             
-            // 2. علامات التعجب للتعبيرات القوية
-            const exclamationWords = ['يا', 'آه', 'واو', 'رائع', 'ممتاز', 'عظيم', 'برافو', 'مذهل', 'الله', 'سبحان'];
+            // Exclamations
+            const exclamationWords = ['يا', 'آه', 'واو', 'رائع', 'ممتاز', 'عظيم', 'برافو', 'مذهل'];
             for (const word of exclamationWords) {
                 if (text.includes(word)) {
-                    console.log(`❗ MOT EXCLAMATION trouvé: "${word}"`);
                     if (!result.endsWith('؟') && !result.endsWith('!') && !result.endsWith('.')) {
                         result = result.trim() + '!';
-                        console.log(`✅ POINT D'EXCLAMATION ajouté: "${result}"`);
+                        addDebugLog(`❗ Exclamation détectée (${word}) -> "${result}"`);
                         return result;
                     }
                 }
             }
             
-            // 3. النقاط للتأكيدات
-            const statementWords = ['نعم', 'لا', 'بالضبط', 'فعلاً', 'طبعاً', 'بالتأكيد', 'موافق', 'هكذا', 'إذن', 'أخيراً'];
-            for (const word of statementWords) {
-                if (text.includes(word)) {
-                    console.log(`⚫ MOT AFFIRMATION trouvé: "${word}"`);
-                    if (!result.endsWith('؟') && !result.endsWith('!') && !result.endsWith('.')) {
-                        result = result.trim() + '.';
-                        console.log(`✅ POINT ajouté: "${result}"`);
-                        return result;
-                    }
-                }
-            }
-            
-            // 4. Si le texte est assez long, ajouter un point par défaut
+            // Point par défaut pour phrases longues
             const wordCount = text.trim().split(/\s+/).length;
             if (wordCount >= 3) {
-                console.log(`📏 TEXTE LONG (${wordCount} mots), ajout point par défaut`);
                 if (!result.endsWith('؟') && !result.endsWith('!') && !result.endsWith('.')) {
                     result = result.trim() + '.';
-                    console.log(`✅ POINT PAR DÉFAUT ajouté: "${result}"`);
+                    addDebugLog(`⚫ Point par défaut ajouté -> "${result}"`);
                     return result;
                 }
             }
             
-            console.log(`❌ AUCUNE PONCTUATION ajoutée pour: "${text}"`);
+            addDebugLog(`➡️ Aucune ponctuation ajoutée`);
             return text;
         }
 
         function stopRecognition() {
-            console.log('🛑 Arrêt de la reconnaissance...');
-            
-            // Arrêter tous les systèmes
-            if (window.stopContinuousRecognition) {
-                window.stopContinuousRecognition();
-            }
-            if (window.stopSimpleContinuous) {
-                window.stopSimpleContinuous();
-            }
-            
             if (recognition) {
                 isListening = false;
-                try {
-                    recognition.stop();
-                } catch (error) {
-                    console.log('Erreur arrêt recognition:', error.message);
-                }
+                recognition.stop();
                 recognition = null;
+                addDebugLog('🛑 Recognition arrêtée');
             }
             
             if (audioContext) {
-                try {
-                    audioContext.close();
-                } catch (error) {
-                    console.log('Erreur fermeture audio context:', error.message);
-                }
+                audioContext.close();
                 audioContext = null;
             }
             
@@ -859,8 +561,6 @@
             updateStatus('🔴 توقف - انتهى التحويل', 'stopped');
             currentInterim = '';
             displayTranscript();
-            
-            console.log('✅ Reconnaissance arrêtée complètement');
         }
 
         function displayTranscript() {
@@ -925,11 +625,14 @@
             fullTranscript = '';
             currentInterim = '';
             isEditable = false;
+            sentenceCount = 0;
             const resultatDiv = document.getElementById('resultat');
             resultatDiv.contentEditable = false;
             resultatDiv.classList.remove('editable');
             document.getElementById('editBtnText').textContent = 'تعديل';
+            document.getElementById('debugLog').innerHTML = 'Debug vidé...';
             displayTranscript();
+            addDebugLog('🗑️ Tout vidé');
         }
 
         function copyText() {
@@ -965,7 +668,6 @@
             
             let exportText = `تحويل الصوت إلى نص\n`;
             exportText += `التاريخ: ${new Date().toLocaleString('ar-SA')}\n`;
-            exportText += `المدة التقريبية: ${getRecordingDuration()}\n`;
             exportText += `=`.repeat(50) + `\n\n`;
             exportText += text;
             
@@ -978,12 +680,6 @@
             window.URL.revokeObjectURL(url);
             
             updateStatus('💾 تم تحميل الملف!', 'stopped');
-        }
-
-        function getRecordingDuration() {
-            const wordCount = fullTranscript.trim().split(/\s+/).filter(word => word.length > 0).length;
-            const estimatedMinutes = Math.round(wordCount / 120);
-            return estimatedMinutes > 0 ? `~${estimatedMinutes} دقيقة` : '< دقيقة واحدة';
         }
 
         function updateWordCount() {
@@ -1006,53 +702,8 @@
         }
 
         function handleMicrophoneError(error) {
-            let message = '';
-            let instructions = '';
-            
-            const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-            const isAndroid = /Android/.test(navigator.userAgent);
-            
-            switch(error.name) {
-                case 'NotAllowedError':
-                    message = '🚫 تم رفض إذن الميكروفون';
-                    if (isMobile) {
-                        if (isIOS) {
-                            instructions = '\n📱 لأجهزة iPhone/iPad:\n1. اذهب إلى الإعدادات\n2. اختر Safari\n3. فعل الميكروفون\n4. أعد تحميل الصفحة';
-                        } else if (isAndroid) {
-                            instructions = '\n📱 لأجهزة Android:\n1. اضغط على أيقونة القفل في المتصفح\n2. فعل الميكروفون\n3. أعد تحميل الصفحة\nأو اذهب لإعدادات المتصفح > أذونات الموقع';
-                        }
-                    } else {
-                        instructions = '\n💻 للكمبيوتر:\n1. اضغط على أيقونة الميكروفون في شريط العناوين\n2. اختر "السماح"\n3. أعد تحميل الصفحة';
-                    }
-                    break;
-                case 'NotFoundError':
-                    message = '🎤 لم يتم العثور على ميكروفون';
-                    instructions = '\nتأكد من توصيل ميكروفون أو استخدام سماعات بميكروفون';
-                    break;
-                case 'NotReadableError':
-                    message = '⚠️ الميكروفون مستخدم من تطبيق آخر';
-                    instructions = '\nأغلق التطبيقات الأخرى التي تستخدم الميكروفون';
-                    break;
-                case 'OverconstrainedError':
-                    message = '🔧 مشكلة في إعدادات الميكروفون';
-                    instructions = '\nجرب إعادة تحميل الصفحة أو استخدم متصفح آخر';
-                    break;
-                default:
-                    message = '❌ خطأ في الوصول للميكروفون';
-                    if (isMobile) {
-                        instructions = '\n📱 جرب:\n1. إعادة تحميل الصفحة\n2. فتح الموقع في متصفح آخر\n3. التأكد من أذونات الميكروفون';
-                    }
-            }
-            
-            updateStatus(message + instructions, 'error');
-            
-            // Afficher les instructions dans une popup pour mobile
-            if (isMobile && instructions) {
-                setTimeout(() => {
-                    alert(message + instructions);
-                }, 1000);
-            }
+            let message = '🚫 خطأ في الميكروفون: ' + error.name;
+            updateStatus(message, 'error');
         }
 
         function handleRecognitionError(error) {
@@ -1079,111 +730,11 @@
             stopRecognition();
         }
 
-        function initAudioContext() {
-            try {
-                navigator.mediaDevices.getUserMedia({ audio: true })
-                    .then(stream => {
-                        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                        analyser = audioContext.createAnalyser();
-                        const microphone = audioContext.createMediaStreamSource(stream);
-                        microphone.connect(analyser);
-                        
-                        analyser.fftSize = 256;
-                        const bufferLength = analyser.frequencyBinCount;
-                        const dataArray = new Uint8Array(bufferLength);
-                        
-                        function updateVolume() {
-                            if (!analyser) return;
-                            
-                            analyser.getByteFrequencyData(dataArray);
-                            const average = dataArray.reduce((a, b) => a + b) / bufferLength;
-                            const percentage = (average / 255) * 100;
-                            
-                            document.getElementById('volumeBar').style.width = percentage + '%';
-                            
-                            if (isListening) {
-                                requestAnimationFrame(updateVolume);
-                            }
-                        }
-                        
-                        updateVolume();
-                    });
-            } catch (error) {
-                console.log('صوت السياق غير متوفر:', error);
-            }
-        }
-
-        // اختصارات لوحة المفاتيح
-        document.addEventListener('keydown', function(e) {
-            if (e.ctrlKey || e.metaKey) {
-                switch(e.key) {
-                    case ' ':
-                        e.preventDefault();
-                        if (isListening) {
-                            stopRecognition();
-                        } else {
-                            startRecognition();
-                        }
-                        break;
-                    case 'e':
-                        e.preventDefault();
-                        toggleEdit();
-                        break;
-                    case 'c':
-                        if (e.shiftKey) {
-                            e.preventDefault();
-                            copyText();
-                        }
-                        break;
-                    case 's':
-                        if (e.shiftKey) {
-                            e.preventDefault();
-                            exportText();
-                        }
-                        break;
-                }
-            }
-        });
-
-        // التهيئة مع التحقق من البروتوكول
+        // Initialisation
         document.addEventListener('DOMContentLoaded', function() {
             updateWordCount();
-            
-            // عرض تحذير إذا لم يكن الاتصال آمناً
-            if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-                const warningBanner = document.createElement('div');
-                warningBanner.style.cssText = `
-                    background: linear-gradient(45deg, #ff5722, #ff7043);
-                    color: white;
-                    padding: 15px;
-                    text-align: center;
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    z-index: 1000;
-                    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-                    direction: rtl;
-                `;
-                warningBanner.innerHTML = `
-                    🔒 <strong>تحذير:</strong> الميكروفون يتطلب اتصالاً آمناً (HTTPS)
-                    <button onclick="window.location.href='https://' + window.location.host + window.location.pathname" 
-                            style="margin-right: 10px; padding: 5px 15px; border: none; border-radius: 5px; background: white; color: #ff5722; font-weight: bold; cursor: pointer;">
-                        الانتقال للرابط الآمن
-                    </button>
-                    <button onclick="this.parentElement.remove()" 
-                            style="margin-right: 5px; padding: 5px 10px; border: 1px solid white; border-radius: 5px; background: transparent; color: white; cursor: pointer;">
-                        ✕
-                    </button>
-                `;
-                document.body.insertBefore(warningBanner, document.body.firstChild);
-                
-                // Ajuster le padding du container pour éviter le chevauchement
-                document.querySelector('.container').style.marginTop = '80px';
-            }
+            addDebugLog('✅ Application initialisée');
         });
-
-        updateWordCount();
     </script>
 </body>
 </html>
