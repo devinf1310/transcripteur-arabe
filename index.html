@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎤 مُحَوِّل الصوت إلى نص مع علامات الترقيم</title>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Tajawal', 'Tahoma', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            direction: rtl;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.2em;
+            font-weight: 700;
+            font-family: 'Amiri', serif;
+        }
+
+        .info-banner {
+            background: #e3f2fd;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: right;
+            border-right: 4px solid #2196F3;
+        }
+
+        .info-banner h3 {
+            color: #1565c0;
+            margin-bottom: 15px;
+            text-align: center;
+            font-family: 'Amiri', serif;
+            font-size: 1.3em;
+        }
+
+        .info-banner p {
+            color: #1565c0;
+            line-height: 1.8;
+            margin-bottom: 10px;
+            font-size: 15px;
+        }
+
+        .punctuation-controls {
+            background: #fff3cd;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .punctuation-controls h4 {
+            color: #856404;
+            margin-bottom: 15px;
+            text-align: center;
+            font-family: 'Amiri', serif;
+            font-size: 1.2em;
+        }
+
+        .punctuation-options {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .punctuation-options label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #856404;
+            cursor: pointer;
+        }
+
+        .punctuation-options input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+        }
+
+        .controls {
+            margin-bottom: 30px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 16px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            min-width: 140px;
+            font-family: 'Tajawal', sans-serif;
+        }
+
+        .btn-start {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .btn-stop {
+            background: linear-gradient(45deg, #f44336, #da190b);
+            color: white;
+        }
+
+        .btn-clear {
+            background: linear-gradient(45deg, #FF9800, #e68900);
+            color: white;
+        }
+
+        .btn-copy {
+            background: linear-gradient(45deg, #9C27B0, #7b1fa2);
+            color: white;
+        }
+
+        .btn-edit {
+            background: linear-gradient(45deg, #2196F3, #0b7dda);
+            color: white;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .status {
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .status.listening {
+            color: #4CAF50;
+            animation: pulse 1.5s infinite;
+        }
+
+        .status.stopped {
+            color: #666;
+        }
+
+        .status.error {
+            color: #f44336;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .volume-indicator {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+
+        .volume-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #FFC107, #F44336);
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+
+        .resultat {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 25px;
+            min-height: 400px;
+            text-align: right;
+            font-size: 18px;
+            line-height: 2;
+            white-space: pre-wrap;
+            overflow-y: auto;
+            max-height: 500px;
+            transition: all 0.3s ease;
+            font-family: 'Amiri', serif;
+            direction: rtl;
+        }
+
+        .resultat:not(:empty) {
+            border-color: #4CAF50;
+            background: #f8fff9;
+        }
+
+        .resultat.empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-style: italic;
+            text-align: center;
+        }
+
+        .resultat.editable {
+            border-color: #2196F3;
+            cursor: text;
+        }
+
+        .interim-text {
+            color: #999;
+            font-style: italic;
+            background: rgba(0, 0, 0, 0.05);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .word-count {
+            margin-top: 15px;
+            color: #666;
+            font-size: 14px;
+            text-align: left;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .tips {
+            background: #e8f5e8;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 25px;
+            text-align: right;
+            border-right: 4px solid #4caf50;
+            font-size: 14px;
+        }
+
+        .tips h4 {
+            color: #2e7d32;
+            margin-bottom: 15px;
+            font-family: 'Amiri', serif;
+            font-size: 1.1em;
+        }
+
+        .tips ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .tips li {
+            margin-bottom: 8px;
+            padding-right: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .controls, .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            button {
+                width: 100%;
+                max-width: 250px;
+            }
+            
+            .punctuation-options {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 مُحَوِّل الصوت إلى نص</h1>
+        
+        <div class="info-banner">
+            <h3>📱 مشكلة الملفات المحلية على الجوال</h3>
+            <p><strong>المشكلة:</strong> المتصفحات المحمولة تمنع الميكروفون من الملفات المحلية (file://)</p>
+            <p><strong>الحل السريع:</strong> ارفع الملف على GitHub Pages أو Netlify (مجاناً)</p>
+            <p><strong>أو استخدم خادم محلي:</strong> python -m http.server 8000</p>
+            <p><strong>أو جرب:</strong> تطبيق HTTP Server على Android</p>
+        </div>
+
+        <div class="punctuation-controls">
+            <h4>🔤 خيارات علامات الترقيم</h4>
+            <div class="punctuation-options">
+                <label>
+                    <input type="checkbox" id="autoPunctuation" checked>
+                    علامات الترقيم التلقائية
+                </label>
+                <label>
+                    <input type="checkbox" id="autoCapitalization" checked>
+                    الأحرف الكبيرة التلقائية
+                </label>
+                <label>
+                    <input type="checkbox" id="pauseBreaks" checked>
+                    سطر جديد عند الوقفات الطويلة
+                </label>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="startBtn" class="btn-start" onclick="startRecognition()">
+                ▶️ بدء التسجيل
+            </button>
+            <button id="stopBtn" class="btn-stop" onclick="stopRecognition()" disabled>
+                ⏹️ إيقاف التسجيل
+            </button>
+            <button class="btn-clear" onclick="clearText()">
+                🗑️ مسح النص
+            </button>
+        </div>
+
+        <div id="status" class="status stopped">
+            🔴 جاهز - انقر على "بدء التسجيل" لبدء التحويل
+        </div>
+
+        <div class="volume-indicator">
+            <div id="volumeBar" class="volume-bar"></div>
+        </div>
+
+        <div id="resultat" class="resultat empty">
+            سيظهر النص المحول هنا مع علامات الترقيم التلقائية...
+            
+            تحدث بشكل طبيعي، سيقوم النظام بإضافة علامات الترقيم حسب النبرة والوقفات.
+        </div>
+
+        <div id="wordCount" class="word-count">0 كلمة</div>
+
+        <div class="action-buttons">
+            <button class="btn-edit" onclick="toggleEdit()">
+                ✏️ <span id="editBtnText">تعديل</span>
+            </button>
+            <button class="btn-copy" onclick="copyText()">
+                📋 نسخ النص
+            </button>
+            <button class="btn-copy" onclick="exportText()">
+                💾 تحميل الملف
+            </button>
+        </div>
+
+        <div class="tips">
+            <h4>🔧 حلول للملفات المحلية على الجوال</h4>
+            <ul>
+                <li>• <strong>الحل الأسرع:</strong> ارفع الملف على GitHub Pages (مجاناً وآمن)</li>
+                <li>• <strong>Netlify Drop:</strong> اسحب الملف إلى netlify.com وستحصل على رابط فوري</li>
+                <li>• <strong>CodePen:</strong> انسخ الكود إلى codepen.io واحفظه</li>
+                <li>• <strong>Android:</strong> حمل تطبيق "HTTP Server" وشغل خادم محلي</li>
+                <li>• <strong>على الكمبيوتر:</strong> python -m http.server 8000 ثم افتح localhost:8000</li>
+                <li>• <strong>البديل:</strong> استخدم متصفح Desktop على الجوال (إذا متوفر)</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let recognition = null;
+        let isListening = false;
+        let fullTranscript = '';
+        let currentInterim = '';
+        let isEditable = false;
+        let lastPauseTime = Date.now();
+        let audioContext = null;
+        let analyser = null;
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        function startRecognition() {
+            if (!SpeechRecognition) {
+                updateStatus('❌ التعرف على الصوت غير مدعوم في هذا المتصفح', 'error');
+                return;
+            }
+
+            updateStatus('🔄 اختبار الوصول للميكروفون...', 'listening');
+
+            // Test d'abord l'accès au microphone
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    stream.getTracks().forEach(track => track.stop());
+                    
+                    updateStatus('✅ الميكروفون OK - بدء التشغيل...', 'listening');
+                    initAudioContext();
+                    startSpeechRecognition();
+                })
+                .catch(error => {
+                    handleMicrophoneError(error);
+                });
+        }
+
+        function startSpeechRecognition() {
+            try {
+                recognition = new SpeechRecognition();
+                recognition.lang = 'ar-SA';
+                recognition.continuous = true;
+                recognition.interimResults = true;
+
+                recognition.onstart = function() {
+                    isListening = true;
+                    updateUI();
+                    updateStatus('🎤 جاري الاستماع... تحدث بشكل طبيعي!', 'listening');
+                };
+
+                recognition.onresult = function(event) {
+                    let interimTranscript = '';
+                    let finalTranscript = '';
+                    
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        const transcript = event.results[i][0].transcript;
+                        
+                        if (event.results[i].isFinal) {
+                            finalTranscript += transcript;
+                        } else {
+                            interimTranscript += transcript;
+                        }
+                    }
+                    
+                    if (finalTranscript) {
+                        processAndAddText(finalTranscript);
+                    }
+                    
+                    currentInterim = interimTranscript;
+                    displayTranscript();
+                };
+
+                recognition.onerror = function(event) {
+                    console.error('خطأ في التعرف على الصوت:', event.error);
+                    handleRecognitionError(event.error);
+                };
+
+                recognition.onend = function() {
+                    if (isListening) {
+                        setTimeout(() => {
+                            if (isListening) {
+                                recognition.start();
+                            }
+                        }, 100);
+                    }
+                };
+
+                recognition.start();
+                
+            } catch (error) {
+                console.error('خطأ عند بدء التشغيل:', error);
+                updateStatus('❌ خطأ في بدء التعرف على الصوت', 'error');
+            }
+        }
+
+        function processAndAddText(text) {
+            if (!text.trim()) return;
+            
+            let processedText = text.trim();
+            
+            // DÉSACTIVÉ TEMPORAIREMENT : Commandes manuelles
+            // const commandProcessedText = processPunctuationCommands(processedText);
+            
+            // FOCUS SUR : Ponctuation automatique seulement
+            if (document.getElementById('autoPunctuation').checked) {
+                processedText = addAutomaticPunctuation(processedText);
+                console.log('🤖 Ponctuation automatique appliquée');
+            }
+            
+            // التحقق من الوقفات الطويلة
+            const now = Date.now();
+            const timeSinceLastPause = now - lastPauseTime;
+            
+            if (document.getElementById('pauseBreaks').checked && timeSinceLastPause > 3000 && fullTranscript) {
+                fullTranscript += '\n\n';
+            }
+            
+            fullTranscript += processedText + ' ';
+            lastPauseTime = now;
+        }
+
+        function processPunctuationCommands(text) {
+            const punctuationMap = [
+                ['الشرطة المائلة للأمام', '/'],
+                ['الشرطة المائلة للخلف', '\\'],
+                ['شرطة مائلة معكوسة', '\\'],
+                ['الشرطه المائله للامام', '/'],
+                ['الشرطه المائله للخلف', '\\'],
+                ['شرطه مائله معكوسه', '\\'],
+                ['قوس مربع مفتوح', '['],
+                ['قوس مربع مغلق', ']'],
+                ['قوس معقوف مفتوح', '{'],
+                ['قوس معقوف مغلق', '}'],
+                ['فاصلة منقوطة', ';'],
+                ['نقطة استفهام', '؟'],
+                ['نقطه استفهام', '؟'],
+                ['علامة استفهام', '؟'],
+                ['نقطة تعجب', '!'],
+                ['نقطه تعجب', '!'],
+                ['علامة تعجب', '!'],
+                ['علامة اقتباس', '"'],
+                ['علامة دولار', '$'],
+                ['علامة تساوي', '='],
+                ['علامة زائد', '+'],
+                ['علامة أت', '@'],
+                ['عد إلى السطر', '\n'],
+                ['عد الى السطر', '\n'],
+                ['عود إلى السطر', '\n'],
+                ['عود الى السطر', '\n'],
+                ['اعود الى السطر', '\n'],
+                ['اعود إلى السطر', '\n'],
+                ['شرطة مائلة', '/'],
+                ['شرطه مائله', '/'],
+                ['سطر جديد', '\n'],
+                ['قوس مفتوح', '('],
+                ['قوس مغلق', ')'],
+                ['فاصلة عليا', "'"],
+                ['في المائة', '%'],
+                ['نقطتين', ':'],
+                ['نقطتان', ':'],
+                ['فاصلة', '،'],
+                ['نقطة', '.'],
+                ['نقطه', '.'],
+                ['فاصل', '،'],
+                ['مقطع', ';'],
+                ['شرطة', '-'],
+                ['نجمة', '*'],
+                ['نجمه', '*'],
+                ['اقتباس', '"'],
+                ['بالمائة', '%'],
+                ['أمبرسند', '&'],
+                ['تساوي', '='],
+                ['يساوي', '='],
+                ['دولار', '$'],
+                ['زائد', '+'],
+                ['هاش', '#'],
+                ['رقم', '#'],
+                ['مطه', '-'],
+                ['مع', '+'],
+                ['أت', '@'],
+                
+                ['exclamation point', '!'],
+                ['exclamation mark', '!'],
+                ['question mark', '؟'],
+                ['quotation mark', '"'],
+                ['open parenthesis', '('],
+                ['close parenthesis', ')'],
+                ['open bracket', '['],
+                ['close bracket', ']'],
+                ['open brace', '{'],
+                ['close brace', '}'],
+                ['forward slash', '/'],
+                ['plus sign', '+'],
+                ['dollar sign', '$'],
+                ['equal sign', '='],
+                ['line break', '\n'],
+                ['new line', '\n'],
+                ['semicolon', ';'],
+                ['backslash', '\\'],
+                ['asterisk', '*'],
+                ['at sign', '@'],
+                ['apostrophe', "'"],
+                ['percentage', '%'],
+                ['ampersand', '&'],
+                ['hashtag', '#'],
+                ['period', '.'],
+                ['comma', '،'],
+                ['colon', ':'],
+                ['hyphen', '-'],
+                ['equals', '='],
+                ['percent', '%'],
+                ['quote', '"'],
+                ['slash', '/'],
+                ['star', '*'],
+                ['plus', '+'],
+                ['dash', '-'],
+                ['hash', '#'],
+                ['dot', '.'],
+                
+                ['point d\'interrogation', '؟'],
+                ['point d\'exclamation', '!'],
+                ['barre oblique inverse', '\\'],
+                ['retour à la ligne', '\n'],
+                ['nouvelle ligne', '\n'],
+                ['parenthèse ouverte', '('],
+                ['parenthèse fermée', ')'],
+                ['crochet ouvrant', '['],
+                ['crochet fermant', ']'],
+                ['accolade ouverte', '{'],
+                ['accolade fermée', '}'],
+                ['trait d\'union', '-'],
+                ['point-virgule', ';'],
+                ['signe plus', '+'],
+                ['signe égal', '='],
+                ['esperluette', '&'],
+                ['astérisque', '*'],
+                ['guillemets', '"'],
+                ['apostrophe', "'"],
+                ['deux points', ':'],
+                ['pourcent', '%'],
+                ['arobase', '@'],
+                ['antislash', '\\'],
+                ['virgule', '،'],
+                ['tiret', '-'],
+                ['point', '.'],
+                ['dollar', '$'],
+                ['dièse', '#'],
+                ['étoile', '*'],
+                ['égal', '=']
+            ];
+
+            let processedText = text;
+            
+            for (const [command, symbol] of punctuationMap) {
+                const exactMatch = new RegExp(`^${command.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+                const wordBoundaryMatch = new RegExp(`\\b${command.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+                
+                if (exactMatch.test(processedText.trim())) {
+                    return symbol;
+                }
+                
+                processedText = processedText.replace(wordBoundaryMatch, (match, offset, string) => {
+                    const beforeContext = string.substring(Math.max(0, offset - 10), offset).trim();
+                    const afterContext = string.substring(offset + match.length, Math.min(string.length, offset + match.length + 10)).trim();
+                    
+                    const isCommandContext = (
+                        afterContext === '' ||
+                        afterContext.startsWith(' ') ||
+                        offset + match.length === string.length
+                    );
+                    
+                    const notPartOfWord = !beforeContext.match(/[أ-ي]$/) || beforeContext.endsWith(' ');
+                    
+                    if (isCommandContext && notPartOfWord) {
+                        return symbol;
+                    }
+                    
+                    return match;
+                });
+            }
+            
+            processedText = processedText.replace(/\s+([.,،؟!:;])/g, '$1');
+            processedText = processedText.replace(/([.,،؟!:;])\s*$/g, '$1');
+            
+            return processedText;
+        }
+
+        function addAutomaticPunctuation(text) {
+            console.log('🎯 DÉBUT - Texte reçu pour ponctuation:', `"${text}"`);
+            
+            let result = text;
+            
+            // 1. علامات الاستفهام للأسئلة (plus simple)
+            const questionWords = ['لماذا', 'كيف', 'متى', 'أين', 'من', 'ماذا', 'ما', 'هل', 'كم', 'أي'];
+            for (const word of questionWords) {
+                if (text.includes(word)) {
+                    console.log(`❓ MOT QUESTION trouvé: "${word}"`);
+                    if (!result.endsWith('؟') && !result.endsWith('!') && !result.endsWith('.')) {
+                        result = result.trim() + '؟';
+                        console.log(`✅ POINT D'INTERROGATION ajouté: "${result}"`);
+                        return result;
+                    }
+                }
+            }
+            
+            // 2. علامات التعجب للتعبيرات القوية
+            const exclamationWords = ['يا', 'آه', 'واو', 'رائع', 'ممتاز', 'عظيم', 'برافو', 'مذهل', 'الله', 'سبحان'];
+            for (const word of exclamationWords) {
+                if (text.includes(word)) {
+                    console.log(`❗ MOT EXCLAMATION trouvé: "${word}"`);
+                    if (!result.endsWith('؟') && !result.endsWith('!') && !result.endsWith('.')) {
+                        result = result.trim() + '!';
+                        console.log(`✅ POINT D'EXCLAMATION ajouté: "${result}"`);
+                        return result;
+                    }
+                }
+            }
+            
+            // 3. النقاط للتأكيدات
+            const statementWords = ['نعم', 'لا', 'بالضبط', 'فعلاً', 'طبعاً', 'بالتأكيد', 'موافق', 'هكذا', 'إذن', 'أخيراً'];
+            for (const word of statementWords) {
+                if (text.includes(word)) {
+                    console.log(`⚫ MOT AFFIRMATION trouvé: "${word}"`);
+                    if (!result.endsWith('؟') && !result.endsWith('!') && !result.endsWith('.')) {
+                        result = result.trim() + '.';
+                        console.log(`✅ POINT ajouté: "${result}"`);
+                        return result;
+                    }
+                }
+            }
+            
+            // 4. Si le texte est assez long, ajouter un point par défaut
+            const wordCount = text.trim().split(/\s+/).length;
+            if (wordCount >= 3) {
+                console.log(`📏 TEXTE LONG (${wordCount} mots), ajout point par défaut`);
+                if (!result.endsWith('؟') && !result.endsWith('!') && !result.endsWith('.')) {
+                    result = result.trim() + '.';
+                    console.log(`✅ POINT PAR DÉFAUT ajouté: "${result}"`);
+                    return result;
+                }
+            }
+            
+            console.log(`❌ AUCUNE PONCTUATION ajoutée pour: "${text}"`);
+            return text;
+        }
+
+        function stopRecognition() {
+            if (recognition) {
+                isListening = false;
+                recognition.stop();
+                recognition = null;
+            }
+            
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+            
+            updateUI();
+            updateStatus('🔴 توقف - انتهى التحويل', 'stopped');
+            currentInterim = '';
+            displayTranscript();
+        }
+
+        function displayTranscript() {
+            const resultatDiv = document.getElementById('resultat');
+            
+            if (!fullTranscript && !currentInterim) {
+                resultatDiv.classList.add('empty');
+                resultatDiv.innerHTML = `
+                    سيظهر النص المحول هنا مع علامات الترقيم التلقائية...
+                    
+                    تحدث بشكل طبيعي، سيقوم النظام بإضافة علامات الترقيم حسب النبرة والوقفات.
+                `;
+                return;
+            }
+            
+            resultatDiv.classList.remove('empty');
+            
+            let displayText = fullTranscript;
+            if (currentInterim) {
+                displayText += `<span class="interim-text">${currentInterim}</span>`;
+            }
+            
+            displayText = displayText.replace(/\n\n/g, '</p><p>');
+            displayText = '<p>' + displayText + '</p>';
+            
+            resultatDiv.innerHTML = displayText;
+            resultatDiv.scrollTop = resultatDiv.scrollHeight;
+            
+            updateWordCount();
+        }
+
+        function toggleEdit() {
+            const resultatDiv = document.getElementById('resultat');
+            const editBtn = document.getElementById('editBtnText');
+            
+            if (!isEditable) {
+                resultatDiv.contentEditable = true;
+                resultatDiv.classList.add('editable');
+                resultatDiv.focus();
+                isEditable = true;
+                editBtn.textContent = 'حفظ';
+                
+                resultatDiv.addEventListener('input', function() {
+                    fullTranscript = resultatDiv.innerText;
+                    updateWordCount();
+                });
+                
+                updateStatus('✏️ وضع التعديل مفعل - عدل النص مباشرة', 'stopped');
+                
+            } else {
+                resultatDiv.contentEditable = false;
+                resultatDiv.classList.remove('editable');
+                isEditable = false;
+                editBtn.textContent = 'تعديل';
+                fullTranscript = resultatDiv.innerText;
+                
+                updateStatus('✅ تم حفظ التعديلات', 'stopped');
+            }
+        }
+
+        function clearText() {
+            fullTranscript = '';
+            currentInterim = '';
+            isEditable = false;
+            const resultatDiv = document.getElementById('resultat');
+            resultatDiv.contentEditable = false;
+            resultatDiv.classList.remove('editable');
+            document.getElementById('editBtnText').textContent = 'تعديل';
+            displayTranscript();
+        }
+
+        function copyText() {
+            const text = fullTranscript.trim();
+            if (text) {
+                navigator.clipboard.writeText(text).then(() => {
+                    updateStatus('📋 تم نسخ النص إلى الحافظة!', 'stopped');
+                    setTimeout(() => {
+                        updateStatus('🔴 توقف - انتهى التحويل', 'stopped');
+                    }, 2000);
+                }).catch(() => {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = text;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    updateStatus('📋 تم نسخ النص!', 'stopped');
+                });
+            } else {
+                updateStatus('❌ لا يوجد نص للنسخ', 'error');
+            }
+        }
+
+        function exportText() {
+            const text = fullTranscript.trim();
+            if (!text) {
+                updateStatus('❌ لا يوجد محتوى للتصدير', 'error');
+                return;
+            }
+            
+            const filename = `تحويل_صوتي_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.txt`;
+            
+            let exportText = `تحويل الصوت إلى نص\n`;
+            exportText += `التاريخ: ${new Date().toLocaleString('ar-SA')}\n`;
+            exportText += `المدة التقريبية: ${getRecordingDuration()}\n`;
+            exportText += `=`.repeat(50) + `\n\n`;
+            exportText += text;
+            
+            const blob = new Blob([exportText], { type: 'text/plain;charset=utf-8' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            window.URL.revokeObjectURL(url);
+            
+            updateStatus('💾 تم تحميل الملف!', 'stopped');
+        }
+
+        function getRecordingDuration() {
+            const wordCount = fullTranscript.trim().split(/\s+/).filter(word => word.length > 0).length;
+            const estimatedMinutes = Math.round(wordCount / 120);
+            return estimatedMinutes > 0 ? `~${estimatedMinutes} دقيقة` : '< دقيقة واحدة';
+        }
+
+        function updateWordCount() {
+            const wordCount = fullTranscript.trim().split(/\s+/).filter(word => word.length > 0).length;
+            document.getElementById('wordCount').textContent = `${wordCount} كلمة`;
+        }
+
+        function updateUI() {
+            const startBtn = document.getElementById('startBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            
+            startBtn.disabled = isListening;
+            stopBtn.disabled = !isListening;
+        }
+
+        function updateStatus(text, className) {
+            const status = document.getElementById('status');
+            status.textContent = text;
+            status.className = 'status ' + className;
+        }
+
+        function handleMicrophoneError(error) {
+            let message = '';
+            let instructions = '';
+            
+            const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            const isAndroid = /Android/.test(navigator.userAgent);
+            
+            switch(error.name) {
+                case 'NotAllowedError':
+                    message = '🚫 تم رفض إذن الميكروفون';
+                    if (isMobile) {
+                        if (isIOS) {
+                            instructions = '\n📱 لأجهزة iPhone/iPad:\n1. اذهب إلى الإعدادات\n2. اختر Safari\n3. فعل الميكروفون\n4. أعد تحميل الصفحة';
+                        } else if (isAndroid) {
+                            instructions = '\n📱 لأجهزة Android:\n1. اضغط على أيقونة القفل في المتصفح\n2. فعل الميكروفون\n3. أعد تحميل الصفحة\nأو اذهب لإعدادات المتصفح > أذونات الموقع';
+                        }
+                    } else {
+                        instructions = '\n💻 للكمبيوتر:\n1. اضغط على أيقونة الميكروفون في شريط العناوين\n2. اختر "السماح"\n3. أعد تحميل الصفحة';
+                    }
+                    break;
+                case 'NotFoundError':
+                    message = '🎤 لم يتم العثور على ميكروفون';
+                    instructions = '\nتأكد من توصيل ميكروفون أو استخدام سماعات بميكروفون';
+                    break;
+                case 'NotReadableError':
+                    message = '⚠️ الميكروفون مستخدم من تطبيق آخر';
+                    instructions = '\nأغلق التطبيقات الأخرى التي تستخدم الميكروفون';
+                    break;
+                case 'OverconstrainedError':
+                    message = '🔧 مشكلة في إعدادات الميكروفون';
+                    instructions = '\nجرب إعادة تحميل الصفحة أو استخدم متصفح آخر';
+                    break;
+                default:
+                    message = '❌ خطأ في الوصول للميكروفون';
+                    if (isMobile) {
+                        instructions = '\n📱 جرب:\n1. إعادة تحميل الصفحة\n2. فتح الموقع في متصفح آخر\n3. التأكد من أذونات الميكروفون';
+                    }
+            }
+            
+            updateStatus(message + instructions, 'error');
+            
+            // Afficher les instructions dans une popup pour mobile
+            if (isMobile && instructions) {
+                setTimeout(() => {
+                    alert(message + instructions);
+                }, 1000);
+            }
+        }
+
+        function handleRecognitionError(error) {
+            let errorMessage = '';
+            
+            switch(error) {
+                case 'no-speech':
+                    errorMessage = '🔇 لم يتم اكتشاف أي كلام';
+                    break;
+                case 'audio-capture':
+                    errorMessage = '🎤 لا يمكن الوصول للميكروفون';
+                    break;
+                case 'not-allowed':
+                    errorMessage = '🚫 تم رفض الإذن - اسمح للميكروفون';
+                    break;
+                case 'network':
+                    errorMessage = '🌐 خطأ في الشبكة';
+                    break;
+                default:
+                    errorMessage = '❌ خطأ: ' + error;
+            }
+            
+            updateStatus(errorMessage, 'error');
+            stopRecognition();
+        }
+
+        function initAudioContext() {
+            try {
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                    .then(stream => {
+                        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        analyser = audioContext.createAnalyser();
+                        const microphone = audioContext.createMediaStreamSource(stream);
+                        microphone.connect(analyser);
+                        
+                        analyser.fftSize = 256;
+                        const bufferLength = analyser.frequencyBinCount;
+                        const dataArray = new Uint8Array(bufferLength);
+                        
+                        function updateVolume() {
+                            if (!analyser) return;
+                            
+                            analyser.getByteFrequencyData(dataArray);
+                            const average = dataArray.reduce((a, b) => a + b) / bufferLength;
+                            const percentage = (average / 255) * 100;
+                            
+                            document.getElementById('volumeBar').style.width = percentage + '%';
+                            
+                            if (isListening) {
+                                requestAnimationFrame(updateVolume);
+                            }
+                        }
+                        
+                        updateVolume();
+                    });
+            } catch (error) {
+                console.log('صوت السياق غير متوفر:', error);
+            }
+        }
+
+        // اختصارات لوحة المفاتيح
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case ' ':
+                        e.preventDefault();
+                        if (isListening) {
+                            stopRecognition();
+                        } else {
+                            startRecognition();
+                        }
+                        break;
+                    case 'e':
+                        e.preventDefault();
+                        toggleEdit();
+                        break;
+                    case 'c':
+                        if (e.shiftKey) {
+                            e.preventDefault();
+                            copyText();
+                        }
+                        break;
+                    case 's':
+                        if (e.shiftKey) {
+                            e.preventDefault();
+                            exportText();
+                        }
+                        break;
+                }
+            }
+        });
+
+        // التهيئة مع التحقق من البروتوكول
+        document.addEventListener('DOMContentLoaded', function() {
+            updateWordCount();
+            
+            // عرض تحذير إذا لم يكن الاتصال آمناً
+            if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+                const warningBanner = document.createElement('div');
+                warningBanner.style.cssText = `
+                    background: linear-gradient(45deg, #ff5722, #ff7043);
+                    color: white;
+                    padding: 15px;
+                    text-align: center;
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    z-index: 1000;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+                    direction: rtl;
+                `;
+                warningBanner.innerHTML = `
+                    🔒 <strong>تحذير:</strong> الميكروفون يتطلب اتصالاً آمناً (HTTPS)
+                    <button onclick="window.location.href='https://' + window.location.host + window.location.pathname" 
+                            style="margin-right: 10px; padding: 5px 15px; border: none; border-radius: 5px; background: white; color: #ff5722; font-weight: bold; cursor: pointer;">
+                        الانتقال للرابط الآمن
+                    </button>
+                    <button onclick="this.parentElement.remove()" 
+                            style="margin-right: 5px; padding: 5px 10px; border: 1px solid white; border-radius: 5px; background: transparent; color: white; cursor: pointer;">
+                        ✕
+                    </button>
+                `;
+                document.body.insertBefore(warningBanner, document.body.firstChild);
+                
+                // Ajuster le padding du container pour éviter le chevauchement
+                document.querySelector('.container').style.marginTop = '80px';
+            }
+        });
+
+        updateWordCount();
+    </script>
+</body>
+</html>
